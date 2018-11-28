@@ -1,0 +1,139 @@
+<html>
+	<head>
+		<link rel="stylesheet" href="cssReset.css">
+		<link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+		<script src="pixi.js"></script>
+		<script src="howler.js"></script>
+		<style>
+
+		</style>
+	</head>
+	<body>
+		<script>
+			var w = 1280;
+			var h = 720;
+
+			var logo;
+			var loading;
+			var bar;
+			var frontBar;
+			var block;
+
+			var game = new PIXI.Renderer({
+				width: w,
+				height: h,
+				antialias: true
+			});
+			document.body.appendChild(game.view);
+
+			var stage = new PIXI.Container();
+
+			function preload() {
+				block = new PIXI.Graphics();
+				block.drawRect(0,0,w,h);
+				block.baseAlpha = 1;
+
+				logo = new PIXI.Sprite.from('./logo.png');
+				console.log(logo);
+
+				let logoSize = Math.min(w/5, h/2);
+				logo.anchor = {
+					x: 0.5, y: 0.5
+				};
+				logo.width = logoSize;
+				logo.height = logoSize;
+				logo.x = w/2;
+				logo.y = h/2;
+
+				loading = new PIXI.Text('Loading...',{fontFamily : 'Roboto', fontSize: 32, fill : 0xffffff, align : 'center'});
+				loading.anchor = {
+					x: 0.5, y: 0
+				};
+				loading.x = w/2;
+				loading.y = h/2 + logoSize/2;
+
+				bar = new PIXI.Graphics();
+				bar.anchor = {x: 0.5, y: 0.5};
+				bar.x = w/2;
+				bar.y = h/2 + logoSize/2 + 50;
+				bar.beginFill(0x333333, 1);
+				bar.drawRect(-logoSize/4, 0, logoSize/2, 20);
+				bar.endFill();
+
+				frontBar = new PIXI.Graphics();
+				frontBar.x = w/2 - logoSize/4;
+				frontBar.y = h/2 + logoSize/2 + 50;
+				frontBar.beginFill(0xFF9999, 1);
+				frontBar.drawRect(0, 0, 1, 20);
+				frontBar.endFill()
+
+				stage.addChild(logo);
+				stage.addChild(block);
+				stage.addChild(loading);
+				stage.addChild(bar);
+				stage.addChild(frontBar);
+			}
+
+			var loaded = false;
+			function load() {
+				window.setTimeout(function() {
+					loaded = true;
+				}, 5000);
+			}
+
+			function gameLoop() {
+
+			}
+
+			function render() {
+
+			}
+
+			var loadWidth = 0;
+			var gr = false;
+
+			var prevTime = Date.now();
+			function drawLoop(t) {
+				let newTime = Date.now();
+				let dt = newTime-prevTime;
+				prevTime = newTime;
+
+				if(loaded && logo) {
+					if(loading) {
+						loading.destroy();
+						loading = undefined;
+						bar.destroy();
+						bar = undefined;
+						frontBar.destroy();
+						frontBar = undefined;
+					}
+					block.alpha += dt/2000;
+					if(block.alpha > 1) {
+						logo.destroy();
+						logo = undefined;
+						block.destroy();
+						block = undefined;
+					}
+				} else if(logo && logo._texture.baseTexture.valid) {
+					block.baseAlpha = Math.max(block.baseAlpha - dt/1000, 0);
+					block.alpha = Math.min(block.baseAlpha + (Math.sin(t/750)+1)/2 * 0.3, 1);
+
+					frontBar.width = Math.min(loadWidth, bar.width);
+					loadWidth += 0.2;
+				} else if(loaded && !gr) {
+					window.setInterval(gameLoop, 1000/60);
+					gr = true;
+				}
+
+				render();
+				game.render(stage);
+
+				window.requestAnimationFrame(drawLoop);
+			}
+			window.requestAnimationFrame(drawLoop);
+
+			preload();
+			load();
+		</script>
+	</body>
+</html>
