@@ -14,6 +14,14 @@
 		<script src="screens/level6.js"></script>
 		<script src="screens/level7.js"></script>
 		<script src="screens/level8.js"></script>
+		<script src="screens/level10.js"></script>
+		<script src="screens/level11.js"></script>
+		<script src="screens/level12.js"></script>
+		<script src="screens/level13.js"></script>
+		<script src="screens/level14.js"></script>
+		<script src="screens/level15.js"></script>
+		<script src="screens/level16.js"></script>
+		<script src="screens/level17.js"></script>
 		<style>
 
 		</style>
@@ -96,7 +104,15 @@
 				levels['level5'] = level5.load();
 				levels['level6'] = level6.load();
 				levels['level7'] = level7.load();
-				//levels['level8'] = level8.load();
+				levels['level8'] = level8.load();
+				levels['level10'] = level10.load();
+				levels['level11'] = level11.load();
+				levels['level12'] = level12.load();
+				levels['level13'] = level13.load();
+				levels['level14'] = level14.load();
+				levels['level15'] = level15.load();
+				levels['level16'] = level16.load();
+				levels['level17'] = level17.load();
 
 				for(let i = 0; i < 10; ++i) {
 					characters[i] = createCharacter("char/" + i + ".json");
@@ -104,18 +120,36 @@
 				}
 			}
 
+			function clearDx() {
+				for(let i = 0, l = characters.length; i < l; ++i) {
+					characters[i].char.dx = 0;
+				}
+			}
+
 			var levels = {};
 			var characters = [];
+			var items = [];
+			var climbables = [];
 
 			var activeKeys = {};
 			document.onkeydown = function(e) {
-				activeKeys[e.keyCode] = true;
-				if(e.keyCode == 107) {
+				if(!activeKeys[e.keyCode]) {
+					activeKeys[e.keyCode] = {
+						used: false
+					};
+				}
+				if(e.keyCode == 187) {
 					++parNum;
+					clearDx();
 				}
-				if(e.keyCode == 109) {
+				if(e.keyCode == 189) {
 					--parNum;
+					clearDx();
 				}
+				if(e.keyCode >= 48 && e.keyCode <= 57) {
+					parNum = e.keyCode - 48;
+				}
+				console.log(e.keyCode);
 			};
 			document.onkeyup = function(e) {
 				delete activeKeys[e.keyCode];
@@ -123,22 +157,74 @@
 
 			var parNum = 0;
 
+			var indicator = new PIXI.Graphics();
+			indicator.beginFill(0x999900, 1);
+			indicator.drawPolygon([-h/60, -h/60, h/60, -h/60, 0, h/60]);
+			indicator.endFill();
+			stage.addChild(indicator);
+			indicator.px = -100;
+			indicator.py = -100;
+			indicator.t = 0;
+
+			Array.prototype.unique = function() {
+				var a = this.concat();
+				for(var i=0; i<a.length; ++i) {
+				    for(var j=i+1; j<a.length; ++j) {
+				        if(a[i] === a[j])
+				            a.splice(j--, 1);
+				    }
+				}
+				return a;
+			};
+
 			function gameLoop() {
+				indicator.t++;
 				if(stage.activeScreen == null) {
 					stage.addChild(levels['menu'].level);
 					stage.activeScreen = levels['menu'];
 				}
 				if(stage.loadScreen != null) {
 					stage.removeChild(stage.activeScreen.level);
-					stage.addChild(stage.loadScreen.level);
+					stage.addChildAt(stage.loadScreen.level, 0);
 					stage.activeScreen = stage.loadScreen;
 					stage.loadScreen = null;
+					stage.activeScreen.tick();
 					for(let char in characters) {
 						if(stage.children.includes(characters[char].char)) {
 							stage.removeChild(characters[char].char);
 						}
 						if(characters[char].screen == stage.activeScreen.name) {
 							stage.addChild(characters[char].char);
+						}
+					}
+					for(let item in items) {
+						if(stage.children.includes(items[item])) {
+							stage.removeChild(items[item]);
+						}
+						if(items[item].screen == stage.activeScreen.name) {
+							stage.addChild(items[item]);
+						}
+					}
+					let adjScreens = stage.activeScreen.adj.map(function(val) {
+						if(val.level != undefined) {
+							return val.level.name;
+						} else {
+							return "nothing";
+						}
+					});
+					for(let climb = 0, l = climbables.length; climb < l; ++climb) {
+						if(stage.children.includes(climbables[climb])) {
+							stage.removeChild(climbables[climb]);
+							climbables[climb].vis = false;
+						}
+						let inAdj = adjScreens.indexOf(climbables[climb].screen);
+						if(climbables[climb].screen == stage.activeScreen.name || inAdj != -1) {
+							stage.addChild(climbables[climb]);
+							if(inAdj != -1) {
+								climbables[climb].x -= stage.activeScreen.adj[inAdj].offset[0];
+								climbables[climb].y -= stage.activeScreen.adj[inAdj].offset[1];
+							}
+							climbables[climb].vis = true;
 						}
 					}
 				}
@@ -149,38 +235,181 @@
 					} else {
 						if(stage.activeScreen.tick) {
 							stage.activeScreen.tick();
+							let p = characters[parNum];
+							if(!p.dead) {
+								p.delay = Math.max(p.delay - 1, 0);
+								if(!p.holding && p.delay == 0) {
+									for(let i = 0, l = items.length; i < l; ++i) {
+										if(items[i].screen == p.screen) {
+											let overlap = items[i].containsPoint({
+												x: p.char.x,
+												y: p.char.y
+											});
+											overlap = overlap || items[i].containsPoint({
+												x: p.char.x + p.char.width,
+												y: p.char.y
+											});
+											overlap = overlap || items[i].containsPoint({
+												x: p.char.x + p.char.width,
+												y: p.char.y + p.char.height - 3
+											});
+											overlap = overlap || items[i].containsPoint({
+												x: p.char.x,
+												y: p.char.y + p.char.height - 3
+											});
+
+											if(overlap) {
+												stage.removeChild(items[i]);
+												p.holding = items[i];
+												items.splice(i, 1);;
+												break;
+											}
+										}
+									}
+									if(!p.holding && activeKeys[69] && !activeKeys[69].used) {
+										activeKeys[69].used = true;
+										for(let i = 0, l = climbables.length; i < l; ++i) {
+											if(climbables[i].vis) {
+												let overlap = climbables[i].containsPoint({
+													x: p.char.x,
+													y: p.char.y
+												});
+												overlap = overlap || climbables[i].containsPoint({
+													x: p.char.x + p.char.width,
+													y: p.char.y
+												});
+												overlap = overlap || climbables[i].containsPoint({
+													x: p.char.x + p.char.width,
+													y: p.char.y + p.char.height - 3
+												});
+												overlap = overlap || climbables[i].containsPoint({
+													x: p.char.x,
+													y: p.char.y + p.char.height - 3
+												});
+
+												if(overlap) {
+													stage.removeChild(climbables[i]);
+													p.holding = climbables[i].holder.holding;
+													climbables[i].holder.holding = undefined;
+													climbables[i].holder.action = false;
+													climbables[i].holder = p;
+													climbables.splice(i, 1);
+													break;
+												}
+											}
+										}
+									}
+								} else if(!p.action && activeKeys[81] && !activeKeys[81].used) {
+									activeKeys[81].used = true;
+									items.push(p.holding);
+									p.holding.screen = stage.activeScreen.name;
+									p.holding.x = p.char.x;
+									p.holding.y = p.char.y;
+									stage.loadScreen = stage.activeScreen;
+									p.holding = undefined;
+									p.delay = 30;
+								} else if(activeKeys[69] && !activeKeys[69].used) {
+									activeKeys[69].used = true;
+									p.action = !p.action;
+									p.char.dx = (p.action ? 0 : p.char.dx);
+									if(p.action) {
+										p.holding.use(p);
+									} else {
+										p.holding.retrieve(p);
+									}
+								}
+							}
 							for(let i = 0, l = characters.length; i < l; ++i) {
 								let curChar = characters[i].char;
-								let onGround = checkPoint(
-									stage.activeScreen, curChar.x,
-									curChar.y + curChar.height + 1, characters[i])
-									|| checkPoint(
+								if(!characters[i].dead) {
+									let above1 = checkPoint(
+										stage.activeScreen, curChar.x,
+										curChar.y - 10, characters[i]);
+									let above2 = checkPoint(
 										stage.activeScreen, curChar.x + curChar.width,
-										curChar.y + curChar.height + 1, characters[i]);
-								if(i == parNum) {
-									if(activeKeys[87] && onGround) {
-										curChar.dy = -16;
+										curChar.y - 10, characters[i]);
+
+									let above;
+
+									if(typeof above1 == 'object' && typeof above2 == 'object') {
+										above = above1.concat(above2).unique();
+									} else if(typeof above1 == 'object') {
+										above = above1;
+									} else if(typeof above2 == 'object') {
+										above = above2;
+									} else {
+										above = (above1 || above2);
 									}
-									if(activeKeys[83]) {
-										curChar.y += 20;
+
+									let onGround = checkPoint(
+										stage.activeScreen, curChar.x,
+										curChar.y + curChar.height + 1, characters[i])
+										|| checkPoint(
+											stage.activeScreen, curChar.x + curChar.width,
+											curChar.y + curChar.height + 1, characters[i])
+										|| checkPoint(
+											stage.activeScreen, curChar.x + curChar.width/5,
+											curChar.y + curChar.height + 1, characters[i])
+										|| checkPoint(
+											stage.activeScreen, curChar.x + curChar.width*3/5,
+											curChar.y + curChar.height + 1, characters[i])
+										|| checkPoint(
+											stage.activeScreen, curChar.x + curChar.width*4/5,
+											curChar.y + curChar.height + 1, characters[i])
+										|| checkPoint(
+											stage.activeScreen, curChar.x + curChar.width*2/5,
+											curChar.y + curChar.height + 1, characters[i]);
+
+									if(i == parNum && !p.action) {
+										curChar.jumpDelay = Math.max(curChar.jumpDelay - 1, 0);
+										let climb = checkClimb(stage.activeScreen, curChar.x+curChar.width/3, curChar.y, p)
+											|| checkClimb(stage.activeScreen, curChar.x+curChar.width/2, curChar.y, p)
+											|| checkClimb(stage.activeScreen, curChar.x+curChar.width*2/3, curChar.y, p);
+
+										if(activeKeys[87] && !above && ((onGround && curChar.jumpDelay == 0) || climb)) {
+											curChar.dy = (climb ? -10 : -22);
+											if(!climb) {
+												curChar.jumpDelay = 30;
+											}
+										}
+										if(activeKeys[32] && !above && curChar.jumpDelay == 0 && (onGround || climb)) {
+											curChar.dy = -22;
+											curChar.jumpDelay = 30;
+										}
+										if((activeKeys[65] && activeKeys[68]) || (!activeKeys[65] && !activeKeys[68])) {
+											curChar.dx += (curChar.dx == 0 ? 0 : (curChar.dx > 0 ? -2 : 2));
+										} else if(activeKeys[65]) {
+											curChar.dx = Math.max(curChar.dx - 2, -12);
+											curChar.dir = false;
+										} else if(activeKeys[68]) {
+											curChar.dx = Math.min(curChar.dx + 2, 12);
+											curChar.dir = true;
+										}
 									}
-									if((activeKeys[65] && activeKeys[68]) || (!activeKeys[65] && !activeKeys[68])) {
-										curChar.dx += (curChar.dx == 0 ? 0 : (curChar.dx > 0 ? -2 : 2));
-									} else if(activeKeys[65]) {
-										curChar.dx = Math.max(curChar.dx - 2, -12);
-									} else if(activeKeys[68]) {
-										curChar.dx = Math.min(curChar.dx + 2, 12);
+
+									if(characters[i].screen == stage.activeScreen.name) {
+										checkMove(stage.activeScreen, characters[i], onGround, above);
+										if(characters[i].action) {
+											characters[i].holding.tick(characters[i]);
+										}
 									}
-								} else {
-									curChar.dx = 0;
-								}
-								if(characters[i].screen == stage.activeScreen.name) {
-									checkMove(stage.activeScreen, characters[i], onGround);
+
+									if(i == parNum) {
+										indicator.px = curChar.x + curChar.width/2;
+										indicator.py = curChar.y - h/20;
+									} else if(onGround) {
+										curChar.dx = 0;
+									}
+								} else if(i == parNum) {
+									indicator.px = -100;
+									indicator.py = -100;
 								}
 							}
 						}
 					}
 				}
+				indicator.x = indicator.px;
+				indicator.y = indicator.py + Math.sin(indicator.t/17) * h/80;
 			}
 
 			function moveAwayFromDoor(char) {
@@ -202,11 +431,11 @@
 				}
 			}
 
-			function checkMove(cur, char, onGround) {
+			function checkMove(cur, char, onGround, above) {
 		        for(let i = 0, l = cur.adj.length; i < l; ++i) {
 		            let adj = cur.adj[i];
-		            if(char.char.x > adj.box[0]
-		                && char.char.x < adj.box[0] + adj.box[2]
+		            if(char.char.x + char.char.width/2 > adj.box[0]
+		                && char.char.x + char.char.width/2 < adj.box[0] + adj.box[2]
 		                && char.char.y > adj.box[1]
 		                && char.char.y < adj.box[1] + adj.box[3]) {
 		                stage.loadScreen = levels[adj.level.name];
@@ -217,15 +446,41 @@
 		            }
 		        }
 				if(char.screen == cur.name) {
-					char.char.dy += 0.5;
+					char.char.dy += 1;
+					char.char.dx = Math.max(Math.min(char.char.dx, 8), -8);
 					if(onGround) {
 						char.char.dy = Math.min(char.char.dy, 0);
 					}
 					if(char.char.dy != 0) {
 						charPhysicsY(cur, char);
 					}
-					if(char.char.dx != 0) {
-						charPhysicsX(cur, char);
+					if(checkSpikes(
+						cur, char.char.x,
+						char.char.y + char.char.height + 1, char)
+						|| checkSpikes(
+							cur, char.char.x + char.char.width,
+							char.char.y + char.char.height + 1, char)) {
+						char.dead = true;
+						if(char.holding) {
+							items.push(char.holding);
+							char.holding.screen = stage.activeScreen.name;
+							char.holding.x = char.char.x;
+							char.holding.y = char.char.y;
+							stage.loadScreen = stage.activeScreen;
+							char.holding = undefined;
+						}
+						if(char.char.dir) {
+							char.char.x += char.char.height;
+							char.char.y += char.char.height - char.char.width;
+							char.char.rotation = Math.PI/2;
+						} else {
+							char.char.x -= char.char.height - char.char.width;
+							char.char.y += char.char.height;
+							char.char.rotation = -Math.PI/2;
+						}
+					}
+					if(!char.dead) {
+						charPhysicsX(cur, char, above);
 					}
 				}
 		    }
@@ -244,6 +499,19 @@
 					for(let i = 0, l = cur.collisionSurfaces.length; i < l; ++i) {
 						let surf = cur.collisionSurfaces[i];
 						while(surf.containsPoint({x:p.x,y:p.y+dy})) {
+							if(surf.isBreakable) {
+								let hitSpeed = Math.sqrt(Math.abs(char.char.dy)*surf.breakY
+									+ Math.abs(char.char.dx)*surf.breakX);
+								if(hitSpeed > 4) {
+									cur.collisionSurfaces.splice(i, 1);
+									--i;
+									--l;
+									if(surf.breakHook) {
+										surf.breakHook();
+									}
+									break;
+								}
+							}
 							dy -= 0.5 * yDir;
 						}
 					}
@@ -251,7 +519,7 @@
 						let oChar = characters[i];
 						if(oChar != char && oChar.screen == char.screen) {
 							while(oChar.char.containsPoint({x:p.x,y:p.y+dy})) {
-								dy -= 0.5;
+								dy -= 0.5 * yDir;
 							}
 						}
 					}
@@ -261,42 +529,134 @@
 				char.char.dy = dy;
 			}
 
-			function charPhysicsX(cur, char) {
-				var xPosChecks = [
-					{x: char.char.x, y: char.char.y + 3},
-					{x: char.char.x + char.char.width, y: char.char.y + 3},
-					{x: char.char.x + char.char.width, y: char.char.y + char.char.height-3},
-					{x: char.char.x, y: char.char.y + char.char.height-3},
-				];
+			function charPhysicsX(cur, char, above) {
 				let dx = char.char.dx;
-				let xDir = (char.char.dx > 0 ? 1 : -1);
-				for(let pos in xPosChecks) {
-					let p = xPosChecks[pos];
-					for(let i = 0, l = cur.collisionSurfaces.length; i < l; ++i) {
-						let surf = cur.collisionSurfaces[i];
-						while(surf.containsPoint({x:p.x+dx,y:p.y})) {
-							dx -= xDir * 0.25;
+				if(char.char.dx != 0) {
+					var xPosChecks = [
+						{x: char.char.x, y: char.char.y + 4},
+						{x: char.char.x + char.char.width, y: char.char.y + 4},
+						{x: char.char.x + char.char.width, y: char.char.y + char.char.height-8},
+						{x: char.char.x, y: char.char.y + char.char.height-8},
+					];
+					let dy = 0;
+					for(let pos in xPosChecks) {
+						let p = xPosChecks[pos];
+						for(let i = 0, l = cur.collisionSurfaces.length; i < l; ++i) {
+							let surf = cur.collisionSurfaces[i];
+							let dx1 = dx;
+							let dx2 = dx;
+							let dy1 = dx * (dx > 0 ? -1 : 1);
+							let dy2 = dx * (dx > 0 ? 1 : -1);
+							let broken = false;
+							while(surf.containsPoint({x:p.x+dx1,y:p.y})) {
+								if(surf.isBreakable
+									&& Math.sqrt(Math.abs(char.char.dy)*surf.breakY
+										+ Math.abs(char.char.dx)*surf.breakX) > 4) {
+									cur.collisionSurfaces.splice(i, 1);
+									--i;
+									--l;
+									if(surf.breakHook) {
+										surf.breakHook();
+									}
+									broken = true;
+									break;
+								} else {
+									dx1 -= 0.25;
+								}
+							}
+							while(!broken && surf.containsPoint({x:p.x+dx2,y:p.y})) {
+								if(surf.isBreakable
+									&& Math.sqrt(Math.abs(char.char.dy)*surf.breakY
+										+ Math.abs(char.char.dx)*surf.breakX) > 4) {
+									cur.collisionSurfaces.splice(i, 1);
+									--i;
+									--l;
+									if(surf.breakHook) {
+										surf.breakHook();
+									}
+									broken = true;
+									break;
+								} else {
+									dx2 += 0.25;
+								}
+							}
+							while(!broken && surf.containsPoint({x:p.x,y:p.y+dy1})) {
+								dy1 -= 0.25;
+							}
+							while(!broken && surf.containsPoint({x:p.x,y:p.y+dy2})) {
+								dy2 += 0.25;
+							}
+							let minDy = Math.abs(dy1) < Math.abs(dy2) ? dy1 : dy2;
+							let minDx = Math.abs(dx1) < Math.abs(dx2) ? dx1 : dx2;
+							dx = (Math.abs(minDy) < Math.abs(minDx) ? 0 : minDx);
+							dy = (Math.abs(minDy) < Math.abs(minDx) ? minDy : 0);
 						}
-					}
-					for(let i = 0, l = characters.length; i < l; ++i) {
-						let oChar = characters[i];
-						if(oChar != char && oChar.screen == char.screen) {
-							while(oChar.char.containsPoint({x:p.x+dx,y:p.y})) {
-								dx -= xDir * 0.25;
+						for(let i = 0, l = cur.spikeSurfaces.length; i < l; ++i) {
+							let surf = cur.spikeSurfaces[i];
+							let dx1 = dx;
+							let dx2 = dx;
+							let dy1 = dx * (dx > 0 ? -1 : 1);
+							let dy2 = dx * (dx > 0 ? 1 : -1);
+							while(surf.containsPoint({x:p.x+dx1,y:p.y})) {
+								dx1 -= 0.25;
+							}
+							while(surf.containsPoint({x:p.x+dx2,y:p.y})) {
+								dx2 += 0.25;
+							}
+							while(surf.containsPoint({x:p.x,y:p.y+dy1})) {
+								dy1 -= 0.25;
+							}
+							while(surf.containsPoint({x:p.x,y:p.y+dy2})) {
+								dy2 += 0.25;
+							}
+							let minDy = Math.abs(dy1) < Math.abs(dy2) ? dy1 : dy2;
+							let minDx = Math.abs(dx1) < Math.abs(dx2) ? dx1 : dx2;
+							dx = (Math.abs(minDy) < Math.abs(minDx) ? 0 : minDx);
+							dy = (Math.abs(minDy) < Math.abs(minDx) ? minDy : 0);
+						}
+
+						let xDir = (dx > 0 ? 1 : -1);
+						for(let i = 0, l = characters.length; i < l; ++i) {
+							let oChar = characters[i];
+							if(oChar != char && oChar.screen == char.screen) {
+								while(oChar.char.containsPoint({x:p.x+dx,y:p.y+dy})) {
+									dx -= xDir * 0.25;
+								}
 							}
 						}
 					}
+					char.char.x += dx;
+					char.char.y += dy;
 				}
-				char.char.x += dx;
+
+				if(typeof above != 'boolean') {
+					for(let i = 0, l = above.length; i < l; ++i) {
+						if(!above[i].action && above[i] != characters[parNum]) {
+							above[i].char.dx = dx;
+						}
+					}
+				}
 			}
 
 			function checkPoint(cur, x, y, char) {
 				let con = false;
+				let chars = [];
 				for(let i = 0, l = cur.collisionSurfaces.length; i < l; ++i) {
 					let surf = cur.collisionSurfaces[i];
 					if(!surf.ceiling && surf.containsPoint({x:x,y:y})) {
-						con = true;
-						break;
+						if(surf.isBreakable
+							&& Math.sqrt(Math.abs(char.char.dy)*surf.breakY
+								+ Math.abs(char.char.dx)*surf.breakX) > 4) {
+							cur.collisionSurfaces.splice(i, 1);
+							if(surf.breakHook) {
+								surf.breakHook();
+							}
+							--i;
+							--l;
+						} else {
+							con = true;
+							break;
+						}
 					}
 				}
 				if(!con) {
@@ -305,9 +665,37 @@
 						if(oChar != char && oChar.screen == char.screen) {
 							if(oChar.char.containsPoint({x:x,y:y})) {
 								con = true;
-								break;
+								chars.push(oChar);
 							}
 						}
+					}
+				}
+				if(!con) {
+					return con;
+				} else {
+					return (chars != [] ? chars : true);
+				}
+			}
+
+			function checkSpikes(cur, x, y, char) {
+				let con = false;
+				for(let i = 0, l = cur.spikeSurfaces.length; i < l; ++i) {
+					let surf = cur.spikeSurfaces[i];
+					if(surf.containsPoint({x:x,y:y})) {
+						con = true;
+						break;
+					}
+				}
+				return con;
+			}
+
+			function checkClimb(cur, x, y, char) {
+				let con = false;
+				for(let i = 0, l = climbables.length; i < l; ++i) {
+					let c = climbables[i];
+					if(c.vis && c.containsPoint({x:x, y:y})) {
+						con = true;
+						break;
 					}
 				}
 				return con;
@@ -347,13 +735,11 @@
 					block.alpha = Math.min(block.baseAlpha + (Math.sin(t/750)+1)/2 * 0.3, 1);
 
 					let loadNum = 0;
-					let loadLen = 0;
+					let loadLen = characters.length + Object.keys(levels).length;
 					for(let level in levels) {
-						++loadLen;
 						loadNum += (levels[level].loaded ? 1 : 0);
 					}
 					for(let char in characters) {
-						++loadLen;
 						loadNum += (characters[char].loaded ? 1 : 0);
 					}
 

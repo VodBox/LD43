@@ -3,10 +3,25 @@ window.level1 = {
     load: function() {
         this.level = new PIXI.Container();
 
-        let bg = new PIXI.Graphics();
-        bg.beginFill(0, 0);
-        bg.drawRect(0, 0, w, h);
-        bg.endFill();
+        //let bg = new PIXI.Graphics();
+        //bg.beginFill(0, 0);
+        //bg.drawRect(0, 0, w, h);
+        //bg.endFill();
+
+        this.loadItems = 2;
+        this.loadedItems = 0;
+
+        let bg = new PIXI.Sprite.from("levels/level1BG.png");
+        bg.width = w;
+        bg.height = h;
+        bg._texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+        bg._texture.baseTexture.screen = this;
+        bg._texture.baseTexture.on('loaded', function() {
+            this.screen.loadedItems++;
+            if(this.screen.loadedItems == this.screen.loadItems) {
+                this.screen.loaded = true;
+            }
+        });
 
         let ground = new PIXI.Graphics();
         ground.beginFill(0x990000, 1);
@@ -20,15 +35,27 @@ window.level1 = {
         wall1.endFill();
         let wall2 = new PIXI.Graphics();
         wall2.beginFill(0x009900, 1);
-        wall2.drawRect(0, 0, h/10, h/2);
+        wall2.drawRect(0, 0, h/5, h/2);
         wall2.endFill();
-        wall2.x = w-h/10;
+        wall2.x = w-h/5;
 
         let roof = new PIXI.Graphics();
         roof.beginFill(0x990000, 1);
         roof.drawRect(0, 0, w, h/10);
         roof.endFill();
         roof.ceiling = true;
+
+        let fg = new PIXI.Sprite.from("levels/level1FG.png");
+        fg.width = w;
+        fg.height = h;
+        fg._texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+        fg._texture.baseTexture.screen = this;
+        fg._texture.baseTexture.on('loaded', function() {
+            this.screen.loadedItems++;
+            if(this.screen.loadedItems == this.screen.loadItems) {
+                this.screen.loaded = true;
+            }
+        });
 
         this.collisionSurfaces = [
             ground,
@@ -37,13 +64,14 @@ window.level1 = {
             roof
         ];
 
-        this.deathSurfaces = [];
+        this.spikeSurfaces = [];
 
         this.level.addChild(bg);
         this.level.addChild(ground);
         this.level.addChild(wall1);
         this.level.addChild(wall2);
         this.level.addChild(roof);
+        this.level.addChild(fg);
 
         this.adj = [
             {
@@ -67,7 +95,7 @@ window.level1 = {
         };
         this.level.adj = this.adj;
 
-        this.loaded = true;
+        this.loaded = false;
 
         return this;
     },
@@ -78,7 +106,7 @@ window.level1 = {
             for(let i = 0, l = characters.length; i < l; ++i) {
                 characters[i].screen = "level1";
                 characters[i].char.x = h*3*(i+1)/20;
-                characters[i].char.y = h*7/10
+                characters[i].char.y = h*6/10
             }
         }
     }

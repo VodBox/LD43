@@ -24,11 +24,11 @@ window.level7 = {
 
         let roof1 = new PIXI.Graphics();
         roof1.beginFill(0x990000, 1);
-        roof1.drawRect(0, 0, w/3, h/10);
+        roof1.drawRect(0, -h/5, w/3, h/5 + h/10);
         roof1.endFill();
         let roof2 = new PIXI.Graphics();
         roof2.beginFill(0x990000, 1);
-        roof2.drawRect(w*2/3, 0, w/3, h/10);
+        roof2.drawRect(w*2/3, -h/5, w/3, h/5 + h/10);
         roof2.endFill();
 
         this.collisionSurfaces = [
@@ -38,6 +38,8 @@ window.level7 = {
             roof1,
             roof2
         ];
+
+        this.spikeSurfaces = [];
 
         this.level.addChild(bg);
         this.level.addChild(ground);
@@ -49,13 +51,13 @@ window.level7 = {
         this.adj = [
             {
                 level: window.level6,
-                box: [w-h/40, h/2, h/20, h/2],
-                offset: [w*37/40, h/2]
+                box: [0, h/2, h/20, h/2],
+                offset: [w*37/40, 0]
             },
             {
                 level: window.level8,
                 box: [w/3, -h/20, w*2/3, h/40],
-                offset: [w*37/40, h/2 - h/20]
+                offset: [0, h*18/20]
             }
         ];
 
@@ -82,7 +84,7 @@ window.level7 = {
             this.newGame = false;
             this.startCutscene = true;
             for(let i = 0, l = characters.length; i < l; ++i) {
-                characters[i].screen = "level1";
+                characters[i].screen = "level7";
                 characters[i].char.x = h*3*(i+1)/20;
                 characters[i].char.y = h*7/10
             }

@@ -57,10 +57,20 @@ window.createButton = function(x, y, w, h, text, image, action) {
     return button;
 };
 
+window.createStairs = function(x, y, w, h, dir, steps) {
+    let con = new PIXI.Graphics();
+    con.beginFill(0xFFFFFF, 1);
+    for(let i = 0; i < steps; ++i) {
+        con.drawRect(x + w*i/steps, (dir ? y + h*i/steps : (y+h) - h*(i+1)/steps), w/steps, (dir ? (steps-i)*h/steps : (i+1)*h/steps));
+    }
+    con.endFill();
+    return con;
+};
+
 window.createCharacter = function(sheetUrl) {
     let c = new PIXI.Graphics();
     c.beginFill(0x999900);
-    c.drawRect(0, 0, h/10, h/5);
+    c.drawRect(0, 0, h/10, h*7/40);
     c.endFill();
     c.anchor = {
         x: 0.5,
@@ -68,9 +78,30 @@ window.createCharacter = function(sheetUrl) {
     };
     c.dx = 0;
     c.dy = 0;
+    c.jumpDelay = 0;
     return {
         char: c,
         screen: 'level1',
-        loaded: true
+        loaded: true,
+        delay: 0
     };
+};
+
+window.createItem = function(image, useCb, tickCb, retrCb, loadCb, that) {
+    let s = new PIXI.Sprite.from(image);
+    s.use = useCb;
+    s.tick = tickCb;
+    s.retrieve = retrCb;
+    s.anchor = {
+        x: 0.5,
+        y: 0.5
+    };
+    s._texture.baseTexture.screen = that;
+    s._texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+    if(!s._texture.baseTexture.valid) {
+        s._texture.baseTexture.on('loaded', loadCb);
+    } else {
+        window.setTimeout(loadCb, 100);
+    }
+    return s;
 };

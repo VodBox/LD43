@@ -1,5 +1,5 @@
-window.level6 = {
-    name: "level6",
+window.level12 = {
+    name: "level12",
     load: function() {
         this.level = new PIXI.Container();
 
@@ -13,9 +13,18 @@ window.level6 = {
         ground.drawRect(0, h*9/10, w, h/10);
         ground.endFill();
 
+        let trap = new PIXI.Graphics();
+        trap.beginFill(0x55FFAA, 1);
+        trap.drawRect(w/4, 0, w/2, h/10);
+        trap.endFill();
+        let trapSpikes = new PIXI.Graphics();
+        trapSpikes.beginFill(0x000099, 1);
+        trapSpikes.drawRect(w/4, h/20, w/2, h/20);
+        trapSpikes.endFill();
+
         let wall1 = new PIXI.Graphics();
         wall1.beginFill(0x009900, 1);
-        wall1.drawRect(0, h/2, h/3, h/2);
+        wall1.drawRect(0, 0, h/10, h/2);
         wall1.endFill();
         let wall2 = new PIXI.Graphics();
         wall2.beginFill(0x009900, 1);
@@ -27,37 +36,34 @@ window.level6 = {
         roof.drawRect(0, 0, w, h/10);
         roof.endFill();
 
-        let spikes = new PIXI.Graphics();
-        spikes.beginFill(0x000099, 1);
-        spikes.drawRect(h/3, h*2/3, w/2, h/3-h/10);
-        spikes.endFill();
-
         this.collisionSurfaces = [
             ground,
             wall1,
             wall2,
-            roof
+            roof,
+            trap
         ];
 
-        this.spikeSurfaces = [spikes];
+        this.spikeSurfaces = [trapSpikes];
 
         this.level.addChild(bg);
         this.level.addChild(ground);
         this.level.addChild(wall1);
         this.level.addChild(wall2);
         this.level.addChild(roof);
-        this.level.addChild(spikes);
+        this.level.addChild(trap);
+        this.level.addChild(trapSpikes);
 
         this.adj = [
             {
-                level: window.level7,
+                level: window.level11,
                 box: [w-h/40, h/2, h/20, h/2],
-                offset: [-w*37/40, 0]
+                offset: [-w*37/40, -h/2 + h/10]//+h/20]
             },
             {
-                level: window.level5,
-                box: [0, 0, h/40, h/2],
-                offset: [w*37/40, h/2 - h/10]
+                level: window.level13,
+                box: [0, h/2, h/40, h/2],
+                offset: [w*37/40, 0]
             }
         ];
 
