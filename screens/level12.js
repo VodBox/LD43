@@ -3,10 +3,32 @@ window.level12 = {
     load: function() {
         this.level = new PIXI.Container();
 
-        let bg = new PIXI.Graphics();
-        bg.beginFill(0, 0);
-        bg.drawRect(0, 0, w, h);
-        bg.endFill();
+        this.loadItems = 2;
+        this.loadedItems = 0;
+
+        let bg = new PIXI.Sprite.from("levels/level12BG.png");
+        bg.width = w;
+        bg.height = h;
+        bg._texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+        bg._texture.baseTexture.screen = this;
+        bg._texture.baseTexture.on('loaded', function() {
+            this.screen.loadedItems++;
+            if(this.screen.loadedItems == this.screen.loadItems) {
+                this.screen.loaded = true;
+            }
+        });
+
+        let fg = new PIXI.Sprite.from("levels/level12FG.png");
+        fg.width = w;
+        fg.height = h;
+        fg._texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+        fg._texture.baseTexture.screen = this;
+        fg._texture.baseTexture.on('loaded', function() {
+            this.screen.loadedItems++;
+            if(this.screen.loadedItems == this.screen.loadItems) {
+                this.screen.loaded = true;
+            }
+        });
 
         let ground = new PIXI.Graphics();
         ground.beginFill(0x990000, 1);
@@ -53,6 +75,7 @@ window.level12 = {
         this.level.addChild(roof);
         this.level.addChild(trap);
         this.level.addChild(trapSpikes);
+        this.level.addChild(fg);
 
         this.adj = [
             {

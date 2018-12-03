@@ -3,10 +3,32 @@ window.level11 = {
     load: function() {
         this.level = new PIXI.Container();
 
-        let bg = new PIXI.Graphics();
-        bg.beginFill(0, 0);
-        bg.drawRect(0, 0, w, h);
-        bg.endFill();
+        this.loadItems = 2;
+        this.loadedItems = 0;
+
+        let bg = new PIXI.Sprite.from("levels/level11BG.png");
+        bg.width = w;
+        bg.height = h;
+        bg._texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+        bg._texture.baseTexture.screen = this;
+        bg._texture.baseTexture.on('loaded', function() {
+            this.screen.loadedItems++;
+            if(this.screen.loadedItems == this.screen.loadItems) {
+                this.screen.loaded = true;
+            }
+        });
+
+        let fg = new PIXI.Sprite.from("levels/level11FG.png");
+        fg.width = w;
+        fg.height = h;
+        fg._texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+        fg._texture.baseTexture.screen = this;
+        fg._texture.baseTexture.on('loaded', function() {
+            this.screen.loadedItems++;
+            if(this.screen.loadedItems == this.screen.loadItems) {
+                this.screen.loaded = true;
+            }
+        });
 
         let roof = new PIXI.Graphics();
         roof.beginFill(0x990000, 1);
@@ -29,6 +51,7 @@ window.level11 = {
         floor.endFill();
 
         let stairs = createStairs(h/10, h/2, w/2, h/2-h/10, true, 15);
+        stairs.alpha = 0;
 
         this.collisionSurfaces = [
             roof,
@@ -46,6 +69,7 @@ window.level11 = {
         this.level.addChild(wall2);
         this.level.addChild(floor);
         this.level.addChild(stairs);
+        this.level.addChild(fg);
 
         this.adj = [
             {
@@ -74,7 +98,7 @@ window.level11 = {
         };
         this.level.adj = this.adj;
 
-        this.loaded = true;
+        this.loaded = false;
 
         return this;
     },

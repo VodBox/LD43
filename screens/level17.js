@@ -3,10 +3,32 @@ window.level17 = {
     load: function() {
         this.level = new PIXI.Container();
 
-        let bg = new PIXI.Graphics();
-        bg.beginFill(0, 0);
-        bg.drawRect(0, 0, w, h);
-        bg.endFill();
+        this.loadItems = 3;
+        this.loadedItems = 0;
+
+        let bg = new PIXI.Sprite.from("levels/level17BG.png");
+        bg.width = w;
+        bg.height = h;
+        bg._texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+        bg._texture.baseTexture.screen = this;
+        bg._texture.baseTexture.on('loaded', function() {
+            this.screen.loadedItems++;
+            if(this.screen.loadedItems == this.screen.loadItems) {
+                this.screen.loaded = true;
+            }
+        });
+
+        let fg = new PIXI.Sprite.from("levels/level17FG.png");
+        fg.width = w;
+        fg.height = h;
+        fg._texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+        fg._texture.baseTexture.screen = this;
+        fg._texture.baseTexture.on('loaded', function() {
+            this.screen.loadedItems++;
+            if(this.screen.loadedItems == this.screen.loadItems) {
+                this.screen.loaded = true;
+            }
+        });
 
         let roof = new PIXI.Graphics();
         roof.beginFill(0x990000, 1);
@@ -28,17 +50,32 @@ window.level17 = {
         floor.drawRect(0, h*9/10, w, h/10);
         floor.endFill();
 
-        this.breakable = new PIXI.Graphics();
-        this.breakable.beginFill(0xAA8855, 1);
-        this.breakable.drawRect(w-h/10, h/2, h/10, h/2);
-        this.breakable.endFill();
+        //this.breakable = new PIXI.Graphics();
+        //this.breakable.beginFill(0xAA8855, 1);
+        //this.breakable.drawRect(w-h/10, h/2, h/10, h/2);
+        //this.breakable.endFill();
+        this.breakable = new PIXI.Sprite.from("levels/level17Break.png");
+        this.breakable.x = w-h/10;
+        this.breakable.y = h/2;
+        this.breakable.width = h/10;
+        this.breakable.height = h/2-h/10;
+        this.breakable._texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+        this.breakable._texture.baseTexture.screen = this;
+        this.breakable._texture.baseTexture.on('loaded', function() {
+            this.screen.loadedItems++;
+            if(this.screen.loadedItems == this.screen.loadItems) {
+                this.screen.loaded = true;
+            }
+        });
         this.breakable.isBreakable = true;
         this.breakable.breakX = 4;
         this.breakable.breakY = 4;
         this.breakable.breakHook = function() {
             let l = levels['level8'];
             let b = l.breakable;
+            b.alpha = 0;
             l.collisionSurfaces.splice(l.collisionSurfaces.indexOf(b), 1);
+            this.alpha = 0;
         };
 
         this.collisionSurfaces = [
@@ -56,6 +93,7 @@ window.level17 = {
         this.level.addChild(wall1);
         this.level.addChild(wall2);
         this.level.addChild(floor);
+        this.level.addChild(fg);
         this.level.addChild(this.breakable);
 
         this.adj = [

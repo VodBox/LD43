@@ -3,10 +3,32 @@ window.level14 = {
     load: function() {
         this.level = new PIXI.Container();
 
-        let bg = new PIXI.Graphics();
-        bg.beginFill(0, 0);
-        bg.drawRect(0, 0, w, h);
-        bg.endFill();
+        this.loadItems = 4;
+        this.loadedItems = 0;
+
+        let bg = new PIXI.Sprite.from("levels/level14BG.png");
+        bg.width = w;
+        bg.height = h;
+        bg._texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+        bg._texture.baseTexture.screen = this;
+        bg._texture.baseTexture.on('loaded', function() {
+            this.screen.loadedItems++;
+            if(this.screen.loadedItems == this.screen.loadItems) {
+                this.screen.loaded = true;
+            }
+        });
+
+        let fg = new PIXI.Sprite.from("levels/level14FG.png");
+        fg.width = w;
+        fg.height = h;
+        fg._texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+        fg._texture.baseTexture.screen = this;
+        fg._texture.baseTexture.on('loaded', function() {
+            this.screen.loadedItems++;
+            if(this.screen.loadedItems == this.screen.loadItems) {
+                this.screen.loaded = true;
+            }
+        });
 
         let roof = new PIXI.Graphics();
         roof.beginFill(0x990000, 1);
@@ -29,8 +51,8 @@ window.level14 = {
         floor.endFill();
 
         this.doorTrigger = new PIXI.Graphics();
-        this.doorTrigger.beginFill(0xFF9999, 1);
-        this.doorTrigger.drawRect(h*2/10, h*8/10, h/10, h/10);
+        this.doorTrigger.beginFill(0xFFAA00, 1);
+        this.doorTrigger.drawRect(h*2/10, h*7/10, h/10, h/10);
         this.doorTrigger.endFill();
 
         this.collisionSurfaces = [
@@ -48,6 +70,7 @@ window.level14 = {
         this.level.addChild(wall2);
         this.level.addChild(floor);
         this.level.addChild(this.doorTrigger);
+        this.level.addChild(fg);
 
         this.adj = [
             {
@@ -73,25 +96,24 @@ window.level14 = {
 
         this.loaded = false;
         this.doorUnlocked = false;
-        this.loadItems = 2;
-        this.loadedItems = 0;
 
         this.rope = createItem("rope.png", function(char) {
-            climbables.push(this.ladderRepeat);
-            stage.addChild(this.ladderRepeat);
-            this.ladderRepeat.holder = char;
+            climbables.push(this.ropeRepeat);
+            stage.addChild(this.ropeRepeat);
+            this.ropeRepeat.holder = char;
 
-            this.ladderRepeat.screen = stage.activeScreen.name;
+            this.ropeRepeat.screen = stage.activeScreen.name;
         }, function(char) {
             let hei = char.char.height;
             let inc = h/30;
             let cur = stage.activeScreen;
+            let charDir = (char.char.dir ? char.char.width : -char.char.width);
             for(let y = 0; y < 32; ++y) {
                 let con = false;
                 for(let i = 0, l = cur.collisionSurfaces.length; i < l; ++i) {
                     let surf = cur.collisionSurfaces[i];
-                    if(surf.containsPoint({x:char.char.x,y:char.char.y+char.char.height - hei - inc})
-                        || surf.containsPoint({x:char.char.x + char.char.width,y:char.char.y+char.char.height - hei - inc})) {
+                    if(surf.containsPoint({x:char.char.x + charDir,y:char.char.y + hei + inc})
+                        || surf.containsPoint({x:char.char.x + charDir * 2, y:char.char.y + hei + inc})) {
                         con = true;
                         break;
                     }
@@ -102,27 +124,28 @@ window.level14 = {
                     break;
                 }
             }
-            this.ladderRepeat.x = char.char.x;
-            this.ladderRepeat.y = char.char.y + char.char.height - hei;
-            this.ladderRepeat.height = hei;
-            this.ladderRepeat._texture.orig.width = char.char.width;
-            this.ladderRepeat._texture.orig.height = 64;
-            this.ladderRepeat.width = char.char.width;
-            this.ladderRepeat.vis = true;
+            this.ropeRepeat.x = char.char.x + (char.char.dir ? char.char.width : -char.char.width);
+            this.ropeRepeat.y = char.char.y;
+            this.ropeRepeat.height = hei;
+            this.ropeRepeat._texture.orig.width = char.char.width;
+            this.ropeRepeat._texture.orig.height = 64;
+            this.ropeRepeat.width = char.char.width;
+            this.ropeRepeat.vis = true;
+            this.ropeRepeat.offScreen = stage.activeScreen.name;
         }, function(char) {
-            climbables.splice(climbables.indexOf(this.ladderRepeat), 1);
-            stage.removeChild(this.ladderRepeat);
-            this.ladderRepeat.screen = stage.activeScreen.name;
+            climbables.splice(climbables.indexOf(this.ropeRepeat), 1);
+            stage.removeChild(this.ropeRepeat);
+            this.ropeRepeat.screen = stage.activeScreen.name;
         }, function() {
             this.screen.level.addChild(this.screen.rope);
             ++this.screen.loadedItems;
 
-            let ladderRepeat = new PIXI.TilingSprite.from("ropeRepeat.png");
-            ladderRepeat._texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
-            ladderRepeat._texture.baseTexture.screen = this.screen;
-            this.screen.rope.ladderRepeat = ladderRepeat;
-            if(!ladderRepeat._texture.baseTexture.valid) {
-                ladderRepeat._texture.baseTexture.on('loaded', function() {
+            let ropeRepeat = new PIXI.TilingSprite.from("ropeRepeat.png");
+            ropeRepeat._texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+            ropeRepeat._texture.baseTexture.screen = this.screen;
+            this.screen.rope.ropeRepeat = ropeRepeat;
+            if(!ropeRepeat._texture.baseTexture.valid) {
+                ropeRepeat._texture.baseTexture.on('loaded', function() {
                     this.screen.loadedItems++;
                     if(this.screen.loadedItems == this.screen.loadItems) {
                         this.screen.loaded = true;
@@ -165,6 +188,8 @@ window.level14 = {
                     let l = levels['level8'];
                     l.level.removeChild(l.door);
                     l.collisionSurfaces.splice(l.collisionSurfaces.indexOf(l.door), 1);
+
+                    this.doorTrigger.alpha = 0;
                 }
             }
            if(this.rope) {
@@ -181,6 +206,8 @@ window.level14 = {
                        this.level.removeChild(this.rope);
                        c.holding = this.rope;
                        this.rope = undefined;
+
+                       itemSound.play();
                    }
                }
            }

@@ -3,19 +3,55 @@ window.level15 = {
     load: function() {
         this.level = new PIXI.Container();
 
-        let bg = new PIXI.Graphics();
-        bg.beginFill(0, 0);
-        bg.drawRect(0, 0, w, h);
-        bg.endFill();
+        this.loadItems = 3;
+        this.loadedItems = 0;
+
+        let bg = new PIXI.Sprite.from("levels/level15BG.png");
+        bg.width = w;
+        bg.height = h;
+        bg._texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+        bg._texture.baseTexture.screen = this;
+        bg._texture.baseTexture.on('loaded', function() {
+            this.screen.loadedItems++;
+            if(this.screen.loadedItems == this.screen.loadItems) {
+                this.screen.loaded = true;
+            }
+        });
+
+        let fg = new PIXI.Sprite.from("levels/level15FG.png");
+        fg.width = w;
+        fg.height = h;
+        fg._texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+        fg._texture.baseTexture.screen = this;
+        fg._texture.baseTexture.on('loaded', function() {
+            this.screen.loadedItems++;
+            if(this.screen.loadedItems == this.screen.loadItems) {
+                this.screen.loaded = true;
+            }
+        });
+
+        let overlay = new PIXI.Sprite.from("levels/level15Overlay.png");
+        overlay.width = w;
+        overlay.height = h;
+        overlay._texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+        overlay._texture.baseTexture.screen = this;
+        overlay._texture.baseTexture.on('loaded', function() {
+            this.screen.loadedItems++;
+            if(this.screen.loadedItems == this.screen.loadItems) {
+                this.screen.loaded = true;
+            }
+        });
 
         let roof1 = new PIXI.Graphics();
         roof1.beginFill(0x990000, 1);
         roof1.drawRect(0, 0, w*2/5, h/3);
         roof1.endFill();
+        roof1.alpha = 0;
         let roof2 = new PIXI.Graphics();
-        roof1.beginFill(0x990000, 1);
-        roof1.drawRect(w*3/5, 0, w*2/5, h/3);
-        roof1.endFill();
+        roof2.beginFill(0x990000, 1);
+        roof2.drawRect(w*3/5, 0, w*2/5, h/3);
+        roof2.endFill();
+        roof2.alpha = 0;
 
         let wall1 = new PIXI.Graphics();
         wall1.beginFill(0x009900, 1);
@@ -41,12 +77,14 @@ window.level15 = {
         this.level.addChild(roof2);
         this.level.addChild(wall1);
         this.level.addChild(floor);
+        this.level.addChild(fg);
+        this.level.addChild(overlay);
 
         this.adj = [
             {
                 level: window.level13,
                 box: [0, 0, w, h/10],
-                offset: [0, h/10]
+                offset: [0, h*5/6]
             },
             {
                 level: window.level16,
@@ -69,7 +107,7 @@ window.level15 = {
         };
         this.level.adj = this.adj;
 
-        this.loaded = true;
+        this.loaded = false;
 
         return this;
     },

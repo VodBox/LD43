@@ -3,7 +3,7 @@ window.level5 = {
     load: function() {
         this.level = new PIXI.Container();
 
-        this.loadItems = 2;
+        this.loadItems = 3;
         this.loadedItems = 0;
 
         let bg = new PIXI.Sprite.from("levels/level5BG.png");
@@ -18,7 +18,7 @@ window.level5 = {
             }
         });
 
-        let fg = new PIXI.Sprite.from("levels/level5FG.png");
+        let fg = new PIXI.Sprite.from("levels/level5FGAlt.png");
         fg.width = w;
         fg.height = h;
         fg._texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
@@ -48,16 +48,31 @@ window.level5 = {
         roof1.beginFill(0x990000, 1);
         roof1.drawRect(0, 0, w*2/5, h/10);
         roof1.endFill();
+        roof1.alpha = 0;
 
         let roof2 = new PIXI.Graphics();
         roof2.beginFill(0x990000, 1);
         roof2.drawRect(w*3/5, 0, w*2/5, h/10);
         roof2.endFill();
+        roof2.alpha = 0;
 
-        this.breakable = new PIXI.Graphics();
-        this.breakable.beginFill(0xAA8855, 1);
-        this.breakable.drawRect(w*2/5, 0, w/5, h/10);
-        this.breakable.endFill();
+        //this.breakable = new PIXI.Graphics();
+        //this.breakable.beginFill(0xAA8855, 1);
+        //this.breakable.drawRect(w*2/5, 0, w/5, h/10);
+        //this.breakable.endFill();
+
+        this.breakable = new PIXI.Sprite.from("levels/level5Break.png");
+        this.breakable.x = w*2/5 - 2;
+        this.breakable.width = w/5 + 2;
+        this.breakable.height = h/10;
+        this.breakable._texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+        this.breakable._texture.baseTexture.screen = this;
+        this.breakable._texture.baseTexture.on('loaded', function() {
+            this.screen.loadedItems++;
+            if(this.screen.loadedItems == this.screen.loadItems) {
+                this.screen.loaded = true;
+            }
+        });
 
         this.collisionSurfaces = [
             ground,
@@ -94,6 +109,11 @@ window.level5 = {
                 level: window.level3,
                 box: [0, 0, h/40, h/2],
                 offset: [w*37/40, h/2]
+            },
+            {
+                level: window.level16,
+                box: [0, 0, w, h/10],
+                offset: [0, h*17/20]
             }
         ];
 

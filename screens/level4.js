@@ -3,10 +3,32 @@ window.level4 = {
     load: function() {
         this.level = new PIXI.Container();
 
-        let bg = new PIXI.Graphics();
-        bg.beginFill(0, 0);
-        bg.drawRect(0, 0, w, h);
-        bg.endFill();
+        this.loadItems = 2;
+        this.loadedItems = 0;
+
+        let bg = new PIXI.Sprite.from("levels/level4BG.png");
+        bg.width = w;
+        bg.height = h;
+        bg._texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+        bg._texture.baseTexture.screen = this;
+        bg._texture.baseTexture.on('loaded', function() {
+            this.screen.loadedItems++;
+            if(this.screen.loadedItems == this.screen.loadItems) {
+                this.screen.loaded = true;
+            }
+        });
+
+        let fg = new PIXI.Sprite.from("levels/level4FG.png");
+        fg.width = w;
+        fg.height = h;
+        fg._texture.baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
+        fg._texture.baseTexture.screen = this;
+        fg._texture.baseTexture.on('loaded', function() {
+            this.screen.loadedItems++;
+            if(this.screen.loadedItems == this.screen.loadItems) {
+                this.screen.loaded = true;
+            }
+        });
 
         let ground = new PIXI.Graphics();
         ground.beginFill(0x990000, 1);
@@ -41,6 +63,7 @@ window.level4 = {
         this.level.addChild(wall1);
         this.level.addChild(wall2);
         this.level.addChild(roof);
+        this.level.addChild(fg);
 
         this.adj = [
             {
@@ -101,6 +124,7 @@ window.level4 = {
             this.ladderRepeat._texture.orig.height = 64;
             this.ladderRepeat.width = char.char.width;
             this.ladderRepeat.vis = true;
+            this.ladderRepeat.offScreen = stage.activeScreen.name;
         }, function(char) {
             climbables.splice(climbables.indexOf(this.ladderRepeat), 1);
             stage.removeChild(this.ladderRepeat);
@@ -159,6 +183,8 @@ window.level4 = {
                         this.level.removeChild(this.ladder);
                         c.holding = this.ladder;
                         this.ladder = undefined;
+
+                        itemSound.play();
                     }
                 }
             }

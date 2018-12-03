@@ -1,11 +1,13 @@
 <html>
 	<head>
+		<title>Tombstones and Tribulations - LD43 Compo Entry</title>
 		<link rel="stylesheet" href="cssReset.css">
 		<link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
-		<script src="pixi.js"></script>
-		<script src="howler.js"></script>
+		<script src="pixi.min.js"></script>
+		<script src="howler.min.js"></script>
 		<script src="utils.js"></script>
 		<script src="screens/menu.js"></script>
+		<script src="screens/youwin.js"></script>
 		<script src="screens/level1.js"></script>
 		<script src="screens/level2.js"></script>
 		<script src="screens/level3.js"></script>
@@ -14,6 +16,7 @@
 		<script src="screens/level6.js"></script>
 		<script src="screens/level7.js"></script>
 		<script src="screens/level8.js"></script>
+		<script src="screens/level9.js"></script>
 		<script src="screens/level10.js"></script>
 		<script src="screens/level11.js"></script>
 		<script src="screens/level12.js"></script>
@@ -97,6 +100,7 @@
 			var loaded = false;
 			function load() {
 				levels['menu'] = menu.load();
+				levels['youwin'] = youwin.load();
 				levels['level1'] = level1.load();
 				levels['level2'] = level2.load();
 				levels['level3'] = level3.load();
@@ -105,6 +109,7 @@
 				levels['level6'] = level6.load();
 				levels['level7'] = level7.load();
 				levels['level8'] = level8.load();
+				levels['level9'] = level9.load();
 				levels['level10'] = level10.load();
 				levels['level11'] = level11.load();
 				levels['level12'] = level12.load();
@@ -115,7 +120,7 @@
 				levels['level17'] = level17.load();
 
 				for(let i = 0; i < 10; ++i) {
-					characters[i] = createCharacter("char/" + i + ".json");
+					characters[i] = createCharacter("char/" + i + ".json", i);
 					characters[i].id = i;
 				}
 			}
@@ -139,11 +144,26 @@
 					};
 				}
 				if(e.keyCode == 187) {
-					++parNum;
+					let prevNum = parNum;
+					parNum = parNum + 1;
+					while(parNum < 10 && (characters[parNum].dead || characters[parNum].victory)) {
+						parNum = parNum + 1;
+					}
+					if(parNum == 10) {
+						parNum = prevNum;
+					}
 					clearDx();
 				}
 				if(e.keyCode == 189) {
-					--parNum;
+					let prevNum = parNum;
+					parNum = parNum - 1;
+					while(parNum > -1 && (characters[parNum].dead || characters[parNum].victory)) {
+						parNum = parNum - 1;
+					}
+					if(parNum == -1) {
+						parNum = prevNum;
+					}
+					//parNum = Math.max(parNum -1, 0);
 					clearDx();
 				}
 				if(e.keyCode >= 48 && e.keyCode <= 57) {
@@ -158,7 +178,7 @@
 			var parNum = 0;
 
 			var indicator = new PIXI.Graphics();
-			indicator.beginFill(0x999900, 1);
+			indicator.beginFill(0xFFFF00, 1);
 			indicator.drawPolygon([-h/60, -h/60, h/60, -h/60, 0, h/60]);
 			indicator.endFill();
 			stage.addChild(indicator);
@@ -189,6 +209,9 @@
 					stage.activeScreen = stage.loadScreen;
 					stage.loadScreen = null;
 					stage.activeScreen.tick();
+					if(stage.loadScreen && stage.loadScreen.name == "youwin") {
+						return;
+					}
 					for(let char in characters) {
 						if(stage.children.includes(characters[char].char)) {
 							stage.removeChild(characters[char].char);
@@ -220,16 +243,26 @@
 						let inAdj = adjScreens.indexOf(climbables[climb].screen);
 						if(climbables[climb].screen == stage.activeScreen.name || inAdj != -1) {
 							stage.addChild(climbables[climb]);
-							if(inAdj != -1) {
-								climbables[climb].x -= stage.activeScreen.adj[inAdj].offset[0];
-								climbables[climb].y -= stage.activeScreen.adj[inAdj].offset[1];
+							if(inAdj != -1 && climbables[climb].offScreen != stage.activeScreen.name) {
+								let ouAdjScreens = levels[climbables[climb].screen].adj.map(function(val) {
+									if(val.level != undefined) {
+										return val.level.name;
+									} else {
+										return "nothing";
+									}
+								});
+								let ouAdj = ouAdjScreens.indexOf(stage.activeScreen.name);
+
+								climbables[climb].x += levels[climbables[climb].screen].adj[ouAdj].offset[0];
+								climbables[climb].y += levels[climbables[climb].screen].adj[ouAdj].offset[1];
 							}
+							climbables[climb].offScreen = stage.activeScreen.name;
 							climbables[climb].vis = true;
 						}
 					}
 				}
 
-				if(stage.activeScreen.name != "menu") {
+				if(stage.activeScreen.name != "menu" && stage.activeScreen.name != "youwin") {
 					if(characters[parNum].screen != stage.activeScreen.name) {
 						stage.loadScreen = levels[characters[parNum].screen];
 					} else {
@@ -261,7 +294,8 @@
 											if(overlap) {
 												stage.removeChild(items[i]);
 												p.holding = items[i];
-												items.splice(i, 1);;
+												items.splice(i, 1);
+												itemSound.play();
 												break;
 											}
 										}
@@ -294,6 +328,7 @@
 													climbables[i].holder.action = false;
 													climbables[i].holder = p;
 													climbables.splice(i, 1);
+													dropSound.play();
 													break;
 												}
 											}
@@ -308,20 +343,23 @@
 									stage.loadScreen = stage.activeScreen;
 									p.holding = undefined;
 									p.delay = 30;
+									dropSound.play();
 								} else if(activeKeys[69] && !activeKeys[69].used) {
 									activeKeys[69].used = true;
 									p.action = !p.action;
 									p.char.dx = (p.action ? 0 : p.char.dx);
 									if(p.action) {
 										p.holding.use(p);
+										itemSound.play();
 									} else {
 										p.holding.retrieve(p);
+										dropSound.play();
 									}
 								}
 							}
 							for(let i = 0, l = characters.length; i < l; ++i) {
 								let curChar = characters[i].char;
-								if(!characters[i].dead) {
+								if(!characters[i].dead && !characters[i].victory) {
 									let above1 = checkPoint(
 										stage.activeScreen, curChar.x,
 										curChar.y - 10, characters[i]);
@@ -371,10 +409,18 @@
 											if(!climb) {
 												curChar.jumpDelay = 30;
 											}
+											if(!activeKeys[87].used && Math.random() > 0.3) {
+												walkSound.play('walk' + (1+Math.floor(Math.random()*5)));
+											}
+											activeKeys[87].used = true;
 										}
 										if(activeKeys[32] && !above && curChar.jumpDelay == 0 && (onGround || climb)) {
 											curChar.dy = -22;
 											curChar.jumpDelay = 30;
+											if(!activeKeys[32].used && Math.random() > 0.3) {
+												walkSound.play('walk' + (1+Math.floor(Math.random()*5)));
+											}
+											activeKeys[32].used = true;
 										}
 										if((activeKeys[65] && activeKeys[68]) || (!activeKeys[65] && !activeKeys[68])) {
 											curChar.dx += (curChar.dx == 0 ? 0 : (curChar.dx > 0 ? -2 : 2));
@@ -415,7 +461,7 @@
 			function moveAwayFromDoor(char) {
 				for(let i = 0, l = characters.length; i < l; ++i) {
 					let oChar = characters[i];
-					if(oChar != char && oChar.screen == char.screen) {
+					if(!oChar.victory && oChar != char && oChar.screen == char.screen) {
 						if(Math.abs(oChar.char.y - char.char.y) < 2) {
 							if(char.char.x < w/2) {
 								if((oChar.char.x < char.char.x + char.char.width
@@ -517,7 +563,7 @@
 					}
 					for(let i = 0, l = characters.length; i < l; ++i) {
 						let oChar = characters[i];
-						if(oChar != char && oChar.screen == char.screen) {
+						if(!oChar.victory && oChar != char && oChar.screen == char.screen) {
 							while(oChar.char.containsPoint({x:p.x,y:p.y+dy})) {
 								dy -= 0.5 * yDir;
 							}
@@ -618,7 +664,7 @@
 						let xDir = (dx > 0 ? 1 : -1);
 						for(let i = 0, l = characters.length; i < l; ++i) {
 							let oChar = characters[i];
-							if(oChar != char && oChar.screen == char.screen) {
+							if(!oChar.victory && oChar != char && oChar.screen == char.screen) {
 								while(oChar.char.containsPoint({x:p.x+dx,y:p.y+dy})) {
 									dx -= xDir * 0.25;
 								}
@@ -662,7 +708,7 @@
 				if(!con) {
 					for(let i = 0, l = characters.length; i < l; ++i) {
 						let oChar = characters[i];
-						if(oChar != char && oChar.screen == char.screen) {
+						if(!oChar.victory && oChar != char && oChar.screen == char.screen) {
 							if(oChar.char.containsPoint({x:x,y:y})) {
 								con = true;
 								chars.push(oChar);
