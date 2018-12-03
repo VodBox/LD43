@@ -101,7 +101,7 @@ window.menu = {
             color: 0,
             size: 20
         }, 0x333333, function(e) {
-            alert("Your goal is to get as many of the characters to the exit as possible. Be warned, not everyone can be saved, and some sacrifices may have to be made along the way. Some will perish, others will be left behind...\n\nCONTROLS:\n\nA & D to move left and right.\nW or Space to jump.\nW to climb ladders or ropes.\nE to use a picked up item, or take another characters item.\nQ to drop an item.");
+            alert("Your goal is to get as many of the characters to the exit as possible. Be warned, not everyone can be saved, and some sacrifices may have to be made along the way. Some will perish, others will be left behind...\n\nCONTROLS:\n\nA & D to move left and right.\nW or Space to jump.\nW to climb ladders or ropes.\nE to use a picked up item, or take another characters item.\nQ to drop an item.\n+ or - to cycle characters, or 0-9 to select specific character.");
         }));
 
         var userAgent = navigator.userAgent.toLowerCase();
